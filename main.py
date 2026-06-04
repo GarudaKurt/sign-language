@@ -129,64 +129,41 @@ def detect_letter(landmarks):
             and thumb_touches_index):
         return "F"
 
-    # --- Shared variables for E, M, N (all involve all_curled) ---
+    # --- E: all 4 fingers curled, thumb tucked UNDER fingers ---
     thumb_tip_y  = landmarks[4].y
     thumb_tip_x  = landmarks[4].x
     index_base_x = landmarks[5].x
-    index_tip_x  = landmarks[8].x
-    middle_tip_x = landmarks[12].x
-    ring_tip_x   = landmarks[16].x
 
+    thumb_tucked_under = (thumb_tip_y > index_pip_y and
+                          abs(thumb_tip_x - index_base_x) < 0.12)
+
+    if all_curled and thumb_tucked_under:
+        return "E"
+
+    # --- N: index + middle curled OVER thumb, ring + pinky curled, thumb tucked under index+middle ---
     index_curled  = not f["index"]
     middle_curled = not f["middle"]
     ring_curled   = not f["ring"]
     pinky_curled  = not f["pinky"]
 
-    # --- M: thumb tucked under index + middle + ring (3 fingers) ---
-    # Thumb x sits within the span of index-to-ring fingertips
-    thumb_under_three = (min(index_tip_x, ring_tip_x) - 0.05
-                          < thumb_tip_x <
-                          max(index_tip_x, ring_tip_x) + 0.05)
+    thumb_tip_x  = landmarks[4].x
+    index_tip_x  = landmarks[8].x
+    middle_tip_x = landmarks[12].x
 
-    # Thumb tip is below PIP joints of index, middle, AND ring
-    thumb_below_three_knuckles = (landmarks[4].y > landmarks[7].y and
-                                  landmarks[4].y > landmarks[11].y and
-                                  landmarks[4].y > landmarks[15].y)
-
-    if (index_curled and middle_curled
-            and ring_curled and pinky_curled
-            and thumb_under_three
-            and thumb_below_three_knuckles):
-        return "M"
-
-    # --- N: thumb tucked under index + middle only (2 fingers) ---
-    # Thumb x sits between index and middle fingertips only
+    # Thumb is tucked between/under index and middle (horizontally between their tips)
     thumb_under_index_middle = (min(index_tip_x, middle_tip_x) - 0.05
                                  < thumb_tip_x <
                                  max(index_tip_x, middle_tip_x) + 0.05)
 
-    # Thumb tip is below PIP joints of index and middle only
-    thumb_below_two_knuckles = (landmarks[4].y > landmarks[7].y and
-                                landmarks[4].y > landmarks[11].y)
+    # Thumb tip is lower than index and middle PIP joints (knuckles)
+    thumb_below_knuckles = (landmarks[4].y > landmarks[7].y and
+                            landmarks[4].y > landmarks[11].y)
 
     if (index_curled and middle_curled
             and ring_curled and pinky_curled
             and thumb_under_index_middle
-            and thumb_below_two_knuckles):
+            and thumb_below_knuckles):
         return "N"
-
-    # --- E: all 4 fingers curled, thumb pressed flat under ALL fingers ---
-    # Thumb must be below ALL four PIP joints
-    thumb_below_all = (landmarks[4].y > landmarks[7].y and
-                       landmarks[4].y > landmarks[11].y and
-                       landmarks[4].y > landmarks[15].y and
-                       landmarks[4].y > landmarks[19].y)
-
-    # Thumb lies close to the index base (flat across, not between specific fingers)
-    thumb_across_all = abs(thumb_tip_x - index_base_x) < 0.12
-
-    if all_curled and thumb_below_all and thumb_across_all:
-        return "E"
 
     # --- A: fist, thumb on the side ---
     if all_curled and not f["thumb"]:
@@ -254,7 +231,7 @@ def main():
                 cv2.putText(frame, "No sign detected", (30, 60),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.8, (100, 100, 100), 2, cv2.LINE_AA)
 
-            cv2.imshow("ASL Sign Detection - A to N", frame)  # covers A-N including M
+            cv2.imshow("ASL Sign Detection - A to N", frame)
 
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
